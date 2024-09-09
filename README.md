@@ -19,7 +19,7 @@ Responses to the Questions:
 Streamlit is an open-source Python framework designed for data scientists and AI/ML engineers to efficiently create and share interactive data applications with just a few lines of code. It enables the quick transformation of Python scripts into interactive web apps, significantly reducing the development time compared to traditional methods. You can learn more about Streamlit on their official website.
 
 2. What programming language is Streamlit primarily used with?
-Streamlit is primarily used with the Python programming language. It offers a user-friendly interface for building interactive web applications in Python. If you are interested in exploring Streamlit further, resources like [DataCamp's Python Tutorial on Streamlit][#https://blog.streamlit.io/crafting-a-dashboard-app-in-python-using-streamlit/] can be valuable.
+Streamlit is primarily used with the Python programming language. It offers a user-friendly interface for building interactive web applications in Python. If you are interested in exploring Streamlit further, resources like DataCamp's Python Tutorial on Streamlit can be valuable.
 
 3. Key features of Streamlit that make it popular for building data-driven web applications
 Some key features of Streamlit that contribute to its popularity for building data-driven web applications include its simplicity, ability to auto-update based on data changes, efficiency in creating user interfaces, and its focus on quick and easy development of interactive apps. You can delve deeper into these features by exploring articles like "Building a dashboard in Python using Streamlit".
