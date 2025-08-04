@@ -64,16 +64,18 @@ class AuthClient {
     token: '',
   };
 
+  // NEW (matches current Train interface)
   train: Train = {
-    trainName:'',
-    fromCity:'',
-    toCity:'',
-    seatsAvailable:0,
-    ticketPrices:{
-      economy:0,
-      business:0,
-      firstClass:0,
-    },
+    trainNo: '',
+    trainName: '',
+    fromCity: '',
+    toCity: '',
+    trainType: '',
+    frequency: '',
+    departureDateTime: '',
+    destinationDateTime: '',
+    totalSeats: 0,
+    classes: [],              // ✅ New class-based structure
   };
 
   async signUp(params: SignUpParams): Promise<{ error?: string }> {

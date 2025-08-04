@@ -4,20 +4,11 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import { collection, doc, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField } from '@mui/material';
+import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Typography, Box, Chip } from '@mui/material';
+import { Train } from '@/types/train';
 
-interface Train {
+interface TrainWithId extends Train {
   id: string;
-  trainNo: string;
-  trainName: string;
-  fromCity: string;
-  toCity: string;
-  seatsAvailable: number;
-  trainType: string;
-  frequency: string;
-  departureDateTime: string;
-  destinationDateTime: string;
-  ticketPrice: string;
 }
 
 // Helper function to format date with suffix
@@ -72,28 +63,19 @@ const validateTrainData = (train: Partial<Train>): boolean => {
 };
 
 export default function DeleteTrain(): React.JSX.Element {
-  const [trains, setTrains] = useState<Train[]>([]);
+  const [trains, setTrains] = useState<TrainWithId[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [editId, setEditId] = useState<string | null>(null);
-  const [newTrain, setNewTrain] = useState<Partial<Train>>({});
+  const [newTrain, setNewTrain] = useState<Partial<TrainWithId>>({});
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'trains'), (snapshot) => {
-      const newTrains: Train[] = snapshot.docs.map((docs) => {
+      const newTrains: TrainWithId[] = snapshot.docs.map((docs) => {
         const data = docs.data() as Train;
         return {
           id: docs.id,
-          trainNo: data.trainNo,
-          trainName: data.trainName,
-          fromCity: data.fromCity,
-          toCity: data.toCity,
-          seatsAvailable: data.seatsAvailable,
-          trainType: data.trainType,
-          frequency: data.frequency,
-          departureDateTime: data.departureDateTime,
-          destinationDateTime: data.destinationDateTime,
-          ticketPrice: data.ticketPrice,
-        };
+          ...data,
+        } as TrainWithId;
       });
       setTrains(newTrains);
       setLoading(false);
@@ -114,7 +96,7 @@ export default function DeleteTrain(): React.JSX.Element {
     }
   };
 
-  const startEdit = (train: Train): void => {
+  const startEdit = (train: TrainWithId): void => {
     setEditId(train.id);
     setNewTrain(train);
   };
@@ -134,7 +116,7 @@ export default function DeleteTrain(): React.JSX.Element {
     }
   };
 
-  const handleChange = (field: keyof Train, value: string): void => {
+  const handleChange = (field: keyof TrainWithId, value: string | number): void => {
     setNewTrain(prev => ({ ...prev, [field]: value }));
   };
 
@@ -153,12 +135,12 @@ export default function DeleteTrain(): React.JSX.Element {
                 <TableCell>Train Name</TableCell>
                 <TableCell>From City</TableCell>
                 <TableCell>To City</TableCell>
-                <TableCell>Seats Available</TableCell>
+                <TableCell>Total Seats</TableCell>
                 <TableCell>Train Type</TableCell>
                 <TableCell>Frequency</TableCell>
                 <TableCell>Departure Date & Time</TableCell>
                 <TableCell>Destination Date & Time</TableCell>
-                <TableCell>Ticket Price</TableCell>
+                <TableCell>Classes</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -180,7 +162,7 @@ export default function DeleteTrain(): React.JSX.Element {
                         <TextField value={newTrain.toCity} onChange={(e) => { handleChange('toCity', e.target.value); }} />
                       </TableCell>
                       <TableCell>
-                        <TextField value={newTrain.seatsAvailable} type="number" onChange={(e) => { handleChange('seatsAvailable', e.target.value); }} />
+                        <TextField value={newTrain.totalSeats || 0} type="number" onChange={(e) => { handleChange('totalSeats', parseInt(e.target.value) || 0); }} />
                       </TableCell>
                       <TableCell>
                         <TextField value={newTrain.trainType} onChange={(e) => { handleChange('trainType', e.target.value); }} />
@@ -209,7 +191,9 @@ export default function DeleteTrain(): React.JSX.Element {
                         />
                       </TableCell>
                       <TableCell>
-                        <TextField value={newTrain.ticketPrice} onChange={(e) => { handleChange('ticketPrice', e.target.value); }} />
+                        <Typography variant="body2" color="text.secondary">
+                          Class editing not supported in this view
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         <Button variant="contained" color="primary" onClick={updateTrain}>
@@ -223,7 +207,7 @@ export default function DeleteTrain(): React.JSX.Element {
                       <TableCell>{train.trainName}</TableCell>
                       <TableCell>{train.fromCity}</TableCell>
                       <TableCell>{train.toCity}</TableCell>
-                      <TableCell>{train.seatsAvailable}</TableCell>
+                      <TableCell>{train.totalSeats || 0}</TableCell>
                       <TableCell>{train.trainType}</TableCell>
                       <TableCell>{train.frequency}</TableCell>
                       <TableCell>
@@ -232,7 +216,18 @@ export default function DeleteTrain(): React.JSX.Element {
                       <TableCell>
                         {formatDateWithSuffix(train.destinationDateTime)}
                       </TableCell>
-                      <TableCell>{train.ticketPrice}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                          {train.classes?.map((trainClass, index) => (
+                            <Chip
+                              key={index}
+                              label={`${trainClass.classType} (₹${trainClass.ticketPrice})`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )) || <Typography variant="body2" color="text.secondary">No classes</Typography>}
+                        </Box>
+                      </TableCell>
                       <TableCell sx={{ spacing: 3 }}>
                         <Button variant="contained" color="primary" onClick={() => { startEdit(train); }}>
                           Edit

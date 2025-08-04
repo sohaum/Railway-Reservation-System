@@ -67,12 +67,16 @@ export function MainNav(): React.JSX.Element {
                 </IconButton>
               </Badge>
             </Tooltip> */}
-            <Avatar
-              onClick={userPopover.handleOpen}
+            <Box
               ref={userPopover.anchorRef}
-              src="/assets/avatar.png"
-              sx={{ cursor: 'pointer' }}
-            />
+              sx={{ display: 'inline-flex', alignItems: 'center' }}
+            >
+              <Avatar
+                onClick={userPopover.handleOpen}
+                src="/assets/avatar.png"
+                sx={{ cursor: 'pointer' }}
+              />
+            </Box>
           </Stack>
         </Stack>
       </Box>

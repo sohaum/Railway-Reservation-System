@@ -19,6 +19,10 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
+import { EyeSlash as EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 
@@ -45,6 +49,7 @@ export function SignUpForm(): React.JSX.Element {
   const [errorMessage, setErrorMessage] = React.useState<string>('');
   const [credentialsMatch, setCredentialsMatch] = React.useState(true);
   const [openTerms, setOpenTerms] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState<boolean>(false);
 
   const {
     control,
@@ -139,7 +144,23 @@ export function SignUpForm(): React.JSX.Element {
             render={({ field }) => (
               <FormControl error={Boolean(errors.password)}>
                 <InputLabel>Password</InputLabel>
-                <OutlinedInput {...field} label="Password" type="password" />
+                <OutlinedInput
+                  {...field}
+                  endAdornment={
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={() => setShowPassword(!showPassword)}
+                        onMouseDown={(event) => event.preventDefault()}
+                        edge="end"
+                      >
+                        {showPassword ? <EyeSlashIcon fontSize="var(--icon-fontSize-md)" /> : <EyeIcon fontSize="var(--icon-fontSize-md)" />}
+                      </IconButton>
+                    </InputAdornment>
+                  }
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                />
                 {errors.password ? <FormHelperText>{errors.password.message}</FormHelperText> : null}
               </FormControl>
             )}
