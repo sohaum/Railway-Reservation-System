@@ -172,7 +172,7 @@ npm run start
 ```
 
 ### Deployment Options
-- **Vercel**: Automatic deployment with GitHub integration
+- **Vercel**: Automatic deployment with GitHub integration (used for this project)
 - **Netlify**: Static site deployment
 - **Firebase Hosting**: Deploy alongside Firebase backend
 
