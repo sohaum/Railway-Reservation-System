@@ -2,6 +2,16 @@
 
 A modern, full-stack railway ticket booking application built with Next.js, TypeScript, and Firebase. This system provides a seamless experience for users to search for trains, book tickets, and manage reservations, while offering administrative capabilities for managing trains and user bookings.
 
+## 🔑 Admin Access
+
+For administrative features and management capabilities, use the following credentials:
+
+**Admin Login:**
+- **Email**: `admin@admin.com`
+- **Password**: `Admin123`
+
+*Note: These are demo credentials for testing purposes. In production, use secure authentication methods.*
+
 ## 🚀 Features
 
 ### User Features
