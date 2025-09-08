@@ -24,7 +24,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
-import { collection, query, where, getDocs, setDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, setDoc, updateDoc, doc, getDoc, runTransaction } from 'firebase/firestore';
 
 import { auth, db } from '@/lib/firebase';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -259,7 +259,8 @@ export function CreateReservation(): React.JSX.Element {
 
 
   const generateReferenceNo = (): string => {
-    return 'REF' + Math.floor(Math.random() * 1000000);
+    // Use Firestore doc ID (auto-generated) to ensure uniqueness
+    return 'REF-' + Math.random().toString(36).substr(2, 9).toUpperCase()
   };
 
   if (loading) {
