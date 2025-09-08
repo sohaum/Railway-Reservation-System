@@ -25,7 +25,7 @@ import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { EyeSlash as EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+
 import { paths } from '@/paths';
 import { authClient } from '@/lib/auth/client';
 import { useUser } from '@/hooks/use-user';
@@ -42,58 +42,124 @@ type Values = zod.infer<typeof schema>;
 
 const defaultValues = { firstName: '', lastName: '', email: '', password: '', terms: false } satisfies Values;
 
-export function SignUpForm(): React.JSX.Element {
-  const router = useRouter();
-  const { checkSession } = useUser();
-  const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = React.useState<string>('');
-  const [credentialsMatch, setCredentialsMatch] = React.useState(true);
-  const [openTerms, setOpenTerms] = React.useState(false);
-  const [showPassword, setShowPassword] = React.useState<boolean>(false);
+export function SignInForm(): React.JSX.Element {
+  const router = useRouter();
+  const { checkSession } = useUser();
+  const [showPassword, setShowPassword] = React.useState<boolean>();
+  const [isPending, setIsPending] = React.useState<boolean>(false);
 
-  const {
-    control,
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = useForm<Values>({ defaultValues, resolver: zodResolver(schema) });
+  const {
+    control,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<Values>({ defaultValues, resolver: zodResolver(schema) });
 
-  const onSubmit = React.useCallback(
-    async (values: Values): Promise<void> => {
-      setIsPending(true);
+  const onSubmit = React.useCallback(
+    async (values: Values): Promise<void> => {
+      setIsPending(true);
 
-      try {
-        // 1. Sign up the user with authClient
-        const { user, error } = await authClient.signUp(values);
+      const { error } = await authClient.signInWithPassword(values)
 
-        if (error) {
-          setErrorMessage(error);
-          setIsPending(false);
-          return;
-        }
+      if (error) {
+        setError('root', { type: 'server', message: error });
+        setIsPending(false);
+        return;
+      }
+      // Refresh the auth state
+      await checkSession?.();
 
-        // 2. Write user data to Firestore
-        await setDoc(doc(db, "users", user.uid), {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          email: values.email,
-          createdAt: new Date(),
-        });
+      // UserProvider, for this case, will not refresh the router
+      // After refresh, GuestGuard will handle the redirect
+      router.refresh();
+    },
+    [checkSession, router, setError]
+  );
 
-        // 3. Refresh auth state and redirect
-        await checkSession?.();
-        setCredentialsMatch(true);
-        router.push('/auth/sign-in');
-        
-      } catch (err) {
-        console.error("Sign up failed:", err);
-        // Handle specific Firebase errors here if needed
-        setError('root', { type: 'server', message: 'An unexpected error occurred.' });
-        setIsPending(false);
-      }
-    },
-    [checkSession, router, setError]
-  );
+  return (
+    <Stack spacing={4}>
+      <Stack spacing={1}>
+        <Typography variant="h4">Sign in</Typography>
+        <Typography color="text.secondary" variant="body2">
+          Don&apos;t have an account?{' '}
+          <Link component={RouterLink} color='#f0a137' href={paths.auth.signUp} underline="hover" variant="subtitle2">
+            Sign up
+          </Link>
+        </Typography>
+      </Stack
+
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack spacing={2}>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field }) => (
+              <FormControl error={Boolean(errors.email)}>
+                <InputLabel>Email address</InputLabel>
+                <OutlinedInput {...field} label="Email address" type="email" />
+                {errors.email ? <FormHelperText>{errors.email.message}</FormHelperText> : null}
+              </FormControl>
+            )}
+          />
+          <Controller
+            control={control}
+            name="password"
+            render={({ field }) => (
+              <FormControl error={Boolean(errors.password)}>
+                <InputLabel>Password</InputLabel>
+                <OutlinedInput
+                  {...field}
+                  endAdornment={
+                    showPassword ? (
+                      <EyeIcon
+                        cursor="pointer"
+                        fontSize="var(--icon-fontSize-md)"
+                        onClick={(): void => {
+                          setShowPassword(false);
+                        }}
+                      />
+                    ) : (
+                      <EyeSlashIcon
+                        cursor="pointer"
+                        fontSize="var(--icon-fontSize-md)"
+                        onClick={(): void => {
+                          setShowPassword(true);
+                        }}
+                      />
+                    )
+                  }
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                />
+                {errors.password ? <FormHelperText>{errors.password.message}</FormHelperText> : null}
+              </FormControl>
+            )}
+          />
+          <div>
+            <Link component={RouterLink} color='#f0a137' href={paths.auth.resetPassword} variant="subtitle2">
+              Forgot password?
+            </Link>
+          </div>
+          {errors.root ? <Alert color="error">{errors.root.message}</Alert> : null}
+          <Button disabled={isPending} color='warning' type="submit" variant="contained">
+            Sign in
+          </Button>
+        </Stack>
+      </form>
+      <Alert color="warning">
+      Please enter your registered email and password to{' '}
+        <Typography component="span" sx={{ fontWeight: 700 }} variant="inherit">
+        sign in.
+        </Typography>{' '}
+        If you have forgotten your password, use the {' '}
+        <Typography component="span" sx={{ fontWeight: 700 }} variant="inherit">
+        Forgot Password
+        </Typography>{' '}
+        link to reset it.
+      </Alert>
+    </Stack>
+  );
+}
   
   return (
     <Stack spacing={3}>
