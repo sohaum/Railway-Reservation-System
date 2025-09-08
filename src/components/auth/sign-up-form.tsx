@@ -62,36 +62,39 @@ export function SignUpForm(): React.JSX.Element {
     async (values: Values): Promise<void> => {
       setIsPending(true);
 
-      const { error } = await authClient.signUp(values);
+      try {
+        // 1. Sign up the user with authClient
+        const { user, error } = await authClient.signUp(values);
 
-      if (error) {
-        setErrorMessage(error);
-        if (error === 'User does not exist') {
-          setIsPending(true);
-          return;
-        }
-        if (error === 'Invalid credentials') {
-          setCredentialsMatch(false);
+        if (error) {
+          setErrorMessage(error);
           setIsPending(false);
           return;
         }
-        setError('root', { type: 'server', message: error });
-        setErrorMessage(error);
+
+        // 2. Write user data to Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          firstName: values.firstName,
+          lastName: values.lastName,
+          email: values.email,
+          createdAt: new Date(),
+        });
+
+        // 3. Refresh auth state and redirect
+        await checkSession?.();
+        setCredentialsMatch(true);
+        router.push('/auth/sign-in');
+        
+      } catch (err) {
+        console.error("Sign up failed:", err);
+        // Handle specific Firebase errors here if needed
+        setError('root', { type: 'server', message: 'An unexpected error occurred.' });
         setIsPending(false);
-        return;
       }
-
-      // Refresh the auth state
-      setCredentialsMatch(true);
-      await checkSession?.();
-
-      // UserProvider, for this case, will not refresh the router
-      // After refresh, GuestGuard will handle the redirect
-      router.push('/auth/sign-in');
     },
     [checkSession, router, setError]
   );
-
+  
   return (
     <Stack spacing={3}>
       <Stack spacing={1}>
