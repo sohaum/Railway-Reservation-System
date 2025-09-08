@@ -120,16 +120,23 @@ class AuthClient {
         return { error: 'Invalid credentials' };
       }
   
-      // Get Firestore profile
-      const docRef = doc(db, 'users', newUser.uid);
-      const docSnap = await getDoc(docRef);
-  
-      if (!docSnap.exists()) {
-        return { error: 'User profile not found in Firestore' };
-      }
-  
+      // ✅ Get JWT token for session handling
       const token = await newUser.getIdToken();
       localStorage.setItem('custom-auth-token', token);
+  
+      // 🔎 Firestore profile is optional
+      try {
+        const docRef = doc(db, 'users', newUser.uid);
+        const docSnap = await getDoc(docRef);
+  
+        if (docSnap.exists()) {
+          console.log("Firestore profile:", docSnap.data());
+        } else {
+          console.warn("User exists in Auth but no Firestore profile");
+        }
+      } catch (e) {
+        console.warn("Failed to fetch Firestore profile", e);
+      }
   
       return {}; // success
     } catch (error: any) {
@@ -142,6 +149,7 @@ class AuthClient {
       return { error: error.message };
     }
   }
+
 
   async resetPassword(params: ResetPasswordParams): Promise<{ error?: string }> {
     const { email } = params;
