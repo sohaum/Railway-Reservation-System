@@ -42,11 +42,14 @@ type Values = zod.infer<typeof schema>;
 
 const defaultValues = { firstName: '', lastName: '', email: '', password: '', terms: false } satisfies Values;
 
-export function SignInForm(): React.JSX.Element {
+export function SignUpForm(): React.JSX.Element {
   const router = useRouter();
   const { checkSession } = useUser();
-  const [showPassword, setShowPassword] = React.useState<boolean>();
   const [isPending, setIsPending] = React.useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = React.useState<string>('');
+  const [credentialsMatch, setCredentialsMatch] = React.useState(true);
+  const [openTerms, setOpenTerms] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState<boolean>(false);
 
   const {
     control,
@@ -58,20 +61,32 @@ export function SignInForm(): React.JSX.Element {
   const onSubmit = React.useCallback(
     async (values: Values): Promise<void> => {
       setIsPending(true);
-
-      const { error } = await authClient.signInWithPassword(values)
+      const { error } = await authClient.signUp(values);
 
       if (error) {
+        setErrorMessage(error);
+        if (error === 'User does not exist') {
+          setIsPending(true);
+          return;
+        }
+        if (error === 'Invalid credentials') {
+          setCredentialsMatch(false);
+          setIsPending(false);
+          return;
+        }
         setError('root', { type: 'server', message: error });
+        setErrorMessage(error);
         setIsPending(false);
         return;
       }
       // Refresh the auth state
+      
+      setCredentialsMatch(true);
       await checkSession?.();
-
+      
       // UserProvider, for this case, will not refresh the router
       // After refresh, GuestGuard will handle the redirect
-      router.refresh();
+      router.push('/auth/sign-in');
     },
     [checkSession, router, setError]
   );
