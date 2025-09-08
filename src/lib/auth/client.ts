@@ -4,7 +4,7 @@ import type { User } from '@/types/user';
 import type { Train } from '@/types/train';
 import { redirect } from 'next/navigation';
 import { auth, db} from '@/lib/firebase';
-import {  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "firebase/auth";
+import {  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, confirmPasswordReset } from "firebase/auth";
 import { doc, setDoc,getDoc } from "firebase/firestore"; 
 
 
@@ -142,12 +142,24 @@ class AuthClient {
 
   async resetPassword(params: ResetPasswordParams): Promise<{ error?: string }> {
     const { email } = params;
-
+  
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email, {
+        url: "https://railway-reservation-fbd5c.web.app/auth/reset-password-confirm", // must be whitelisted in Firebase Console
+        handleCodeInApp: true,
+      });
       return {};
-    } catch (error) {
-      return {  };
+    } catch (error: any) {
+      return { error: error.message || "Failed to send reset email" };
+    }
+  }
+
+  async confirmResetPassword(oobCode: string, newPassword: string): Promise<{ error?: string }> {
+    try {
+      await confirmPasswordReset(auth, oobCode, newPassword);
+      return {};
+    } catch (error: any) {
+      return { error: error.message || "Failed to reset password" };
     }
   }
 
