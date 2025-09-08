@@ -111,26 +111,35 @@ class AuthClient {
 
   async signInWithPassword(params: SignInWithPasswordParams): Promise<{ error?: string }> {
     const { email, password } = params;
-
+  
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const newuser = userCredential.user;
-      // Make API request
-
-      if (!newuser) {
+      const newUser = userCredential.user;
+  
+      if (!newUser) {
         return { error: 'Invalid credentials' };
-        // throw new Error('Invalid credentials');
       }
-
-      const token = await newuser.getIdToken();
+  
+      // Get Firestore profile
+      const docRef = doc(db, 'users', newUser.uid);
+      const docSnap = await getDoc(docRef);
+  
+      if (!docSnap.exists()) {
+        return { error: 'User profile not found in Firestore' };
+      }
+  
+      const token = await newUser.getIdToken();
       localStorage.setItem('custom-auth-token', token);
-
-      return {};
-    } catch (error) {
-      if (error === 'auth/wrong-password') {
+  
+      return {}; // success
+    } catch (error: any) {
+      if (error.code === 'auth/wrong-password') {
         return { error: 'Wrong password' };
       }
-      return {  };
+      if (error.code === 'auth/user-not-found') {
+        return { error: 'No user found with this email' };
+      }
+      return { error: error.message };
     }
   }
 
