@@ -1,5 +1,3 @@
-<img width="1918" height="1087" alt="Screenshot 2025-09-08 184604" src="https://github.com/user-attachments/assets/fbff20c8-96b1-4b5e-8ca8-45ff11f01d96" /># 🚂 Railway Reservation System
-
 A modern, full-stack railway ticket booking application built with Next.js, TypeScript, and Firebase. This system provides a seamless experience for users to search for trains, book tickets, and manage reservations, while offering administrative capabilities for managing trains and user bookings.
 
 ## 🔑 Admin Access
