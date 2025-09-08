@@ -177,67 +177,86 @@ export function CreateReservation(): React.JSX.Element {
   };
 
   const handlePay = async (): Promise<void> => {
-    if (!dialogData) return;
-
-    const { trainId, numTickets, selectedClass } = dialogData;
-
-    // Simulate a 10-second payment delay
-    await new Promise((resolve) => setTimeout(resolve, 10000)); // 10-second delay
-
-    // Fetch current train data
-    const trainDoc = doc(db, 'trains', trainId);
-    const trainSnapshot = await getDoc(trainDoc);
-    if (!trainSnapshot.exists()) {
-      alert('Train not found');
+    if (!dialogData || !auth.currentUser) return;
+  
+    const { trainId, numTickets, selectedClass, trainName, totalPrice } = dialogData;
+    const user = auth.currentUser;
+  
+    try {
+      // Run a Firestore transaction to safely update seats and create reservation
+      await runTransaction(db, async (transaction) => {
+        const trainRef = doc(db, 'trains', trainId);
+        const trainDoc = await transaction.get(trainRef);
+  
+        if (!trainDoc.exists()) throw new Error('Train not found');
+  
+        const trainData = trainDoc.data() as TrainWithId;
+  
+        const classToUpdate = trainData.classes.find(cls => cls.classType === selectedClass.classType);
+        if (!classToUpdate) throw new Error('Selected class not found');
+  
+        if (classToUpdate.seatsAvailable < numTickets) {
+          throw new Error(`Not enough seats in ${classToUpdate.classType}. Available: ${classToUpdate.seatsAvailable}`);
+        }
+  
+        // Update class seats
+        const updatedClasses = trainData.classes.map(cls =>
+          cls.classType === selectedClass.classType
+            ? { ...cls, seatsAvailable: cls.seatsAvailable - numTickets }
+            : cls
+        );
+  
+        const newTotalSeats = updatedClasses.reduce((sum, cls) => sum + cls.seatsAvailable, 0);
+  
+        transaction.update(trainRef, {
+          classes: updatedClasses,
+          totalSeats: newTotalSeats,
+        });
+  
+        // Create reservation
+        const reservationRef = doc(collection(db, 'reservations'), generateReferenceNo());
+        transaction.set(reservationRef, {
+          userId: user.uid,
+          email: user.email,
+          referenceNo: reservationRef.id,
+          fromCity,
+          toCity,
+          trainId,
+          trainName,
+          numTickets,
+          selectedClass: selectedClass.classType,
+          ticketPrice: selectedClass.ticketPrice,
+          totalAmount: totalPrice,
+          seatPreferences,
+          dateTime: new Date().toISOString(),
+        });
+      });
+  
+      // Update local state
+      setTrains(prevTrains =>
+        prevTrains.map(train =>
+          train.id === trainId
+            ? {
+                ...train,
+                classes: train.classes.map(cls =>
+                  cls.classType === selectedClass.classType
+                    ? { ...cls, seatsAvailable: cls.seatsAvailable - numTickets }
+                    : cls
+                ),
+                totalSeats: train.classes.reduce((sum, cls) => sum + cls.seatsAvailable, 0),
+              }
+            : train
+        )
+      );
+  
       setOpenDialog(false);
-      return;
+      alert('Reservation successful!');
+    } catch (error: any) {
+      setOpenDialog(false);
+      alert(`Reservation failed: ${error.message}`);
     }
-    const trainData = trainSnapshot.data() as TrainWithId;
-
-    // Update the specific class seats and recalculate total seats
-    const updatedClasses = trainData.classes?.map(cls => 
-      cls.classType === selectedClass.classType 
-        ? { ...cls, seatsAvailable: cls.seatsAvailable - numTickets }
-        : cls
-    ) || [];
-
-    const newTotalSeats = updatedClasses.reduce((total, cls) => total + cls.seatsAvailable, 0);
-
-    // Update train document with new class data
-    await updateDoc(trainDoc, {
-      classes: updatedClasses,
-      totalSeats: newTotalSeats,
-    });
-
-    const reservationData = {
-      email,
-      referenceNo: generateReferenceNo(),
-      fromCity,
-      toCity,
-      trainId,
-      trainName: dialogData.trainName,
-      numTickets,
-      selectedClass: selectedClass.classType,
-      ticketPrice: selectedClass.ticketPrice,
-      totalAmount: dialogData.totalPrice,
-      seatPreferences,
-      dateTime: new Date().toISOString(),
-    };
-    const docRef = doc(collection(db, 'reservations'), reservationData.referenceNo);
-    await setDoc(docRef, reservationData);
-
-    // Update local state to reflect the changes
-    setTrains(prevTrains => 
-      prevTrains.map(train => 
-        train.id === trainId 
-          ? { ...train, classes: updatedClasses, totalSeats: newTotalSeats }
-          : train
-      )
-    );
-
-    setOpenDialog(false);
-    alert(`Reservation successful! Reference: ${reservationData.referenceNo}`);
   };
+
 
   const generateReferenceNo = (): string => {
     return 'REF' + Math.floor(Math.random() * 1000000);
