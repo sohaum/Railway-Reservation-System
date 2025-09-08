@@ -82,35 +82,29 @@ class AuthClient {
     const { firstName, lastName, email, password } = params;
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const docRef = doc(db, 'users', email);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        // User already exists, return an error
-        return { error: 'User already exists' };
+      const newUser = userCredential.user;
+  
+      if (!newUser) {
+        return { error: "Couldn't create user" };
       }
-      if (!userCredential) {
-        return { error: "Couldn't create user"};
-      }
-      user.id = userCredential.user.uid;
-      user.email = email;
-      user.name.firstName = firstName;
-      user.name.lastName = lastName;
-      user.avatar = '/assets/avatar.png';
-      const newuser = userCredential.user;
-      const idTokenResult = await newuser.getIdTokenResult();
-      const uid = newuser.uid;
-      
-      await setDoc(doc(db, 'users', email), {
-        ...params,
+  
+      const idTokenResult = await newUser.getIdTokenResult();
+      const uid = newUser.uid;
+  
+      await setDoc(doc(db, 'users', uid), {
+        firstName,
+        lastName,
+        email,
         id: uid,
         token: idTokenResult.token,
       });
-      redirect('/auth/sign-in');
+  
       return {};
-    } catch (e) {
-      return {};
+    } catch (e: any) {
+      return { error: e.message || "Signup failed" };
     }
   }
+  
   async signInWithOAuth(_: SignInWithOAuthParams): Promise<{ error?: string }> {
     return { error: 'Social authentication not implemented' };
   }
